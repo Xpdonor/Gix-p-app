@@ -1,15 +1,49 @@
-
 import os
 import numpy as np
 import soundfile as sf
-from scipy.signal import butter, lfilter
 from librosa.core import resample as lr_resample
+
 def butter_bandpass(lowcut, highcut, fs, order=4):
+    """پیاده‌سازی ساده فیلتر bandpass بدون scipy"""
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return b, a
+    
+    # طراحی فیلتر ساده (جایگزین butter)
+    # استفاده از فیلتر FIR ساده
+    n = order * 8  # طول فیلتر
+    t = np.arange(n) - n//2
+    t = t + 0.5 if n % 2 == 0 else t
+    
+    # ایجاد فیلتر bandpass
+    h = np.sinc(2 * high * t) - np.sinc(2 * low * t)
+    
+    # پنجره هنینگ برای کاهش ripple
+    window = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(n) / (n - 1))
+    h = h * window
+    
+    # نرمالایز کردن
+    h = h / np.sum(h)
+    
+    return h, [1.0]  # بازگشت b, a (برای سازگاری)
+
+def lfilter(b, a, x):
+    """پیاده‌سازی ساده فیلتر بدون scipy"""
+    # برای فیلتر FIR ساده (a=[1])
+    if len(a) == 1 and a[0] == 1.0:
+        y = np.convolve(x, b, mode='same')
+        return y
+    else:
+        # پیاده‌سازی ساده برای فیلترهای عمومی
+        y = np.zeros_like(x)
+        for i in range(len(x)):
+            for j in range(min(len(b), i+1)):
+                y[i] += b[j] * x[i-j]
+            for j in range(1, min(len(a), i+1)):
+                y[i] -= a[j] * y[i-j]
+            if len(a) > 0:
+                y[i] /= a[0]
+        return y
 
 def apply_eq_and_write(src_path, dst_path, gains_db, sr=22050):
     """
@@ -25,14 +59,15 @@ def apply_eq_and_write(src_path, dst_path, gains_db, sr=22050):
             import librosa
             y = lr_resample(y, orig_sr, sr, res_type='kaiser_best', fix=True, scale=False)
 
-
         bands = {'low': (20, 250), 'mid': (250, 4000), 'high': (4000, sr//2 - 100)}
         out = np.zeros_like(y)
+        
         for band, (lo, hi) in bands.items():
             b, a = butter_bandpass(max(20, lo), min(hi, sr//2-10), sr, order=4)
             band_sig = lfilter(b, a, y)
             gain = 10 ** (gains_db.get(band, 0.0) / 20.0)
             out += band_sig * gain
+        
         # normalize
         maxv = np.max(np.abs(out)) + 1e-9
         out = out / maxv * 0.95
