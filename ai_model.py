@@ -13,7 +13,7 @@ class AIModule:
         self.cluster_centers = None
 
     def extract_embedding(self, path):
-        """استخراج ویژگی‌های صدا بدون librosa"""
+        "
         try:
             import soundfile as sf
             y, sr = sf.read(path)
@@ -31,43 +31,43 @@ class AIModule:
             return None
 
     def simple_mfcc(self, y, sr, n_mfcc=20):
-        """پیاده‌سازی ساده MFCC بدون librosa"""
-        # تبدیل فوریه کوتاه-زمان (STFT)
+        
+       
         frame_length = 2048
         hop_length = 512
         
         stft = np.array([np.fft.rfft(y[i:i+frame_length] * np.hanning(frame_length))
                         for i in range(0, len(y)-frame_length, hop_length)])
         
-        # طیف توان
+        
         power_spectrum = np.abs(stft) ** 2
         
-        # فیلترهای مل (ساده‌شده)
+        
         n_mels = 40
         mel_filters = self.create_mel_filterbank(sr, frame_length, n_mels)
         
-        # اعمال فیلترهای مل
+        
         mel_spectrum = np.dot(power_spectrum, mel_filters.T)
         mel_spectrum = np.log(mel_spectrum + 1e-9)
         
-        # DCT (MFCC)
+       
         mfcc = np.array([np.fft.dct(frame)[:n_mfcc] for frame in mel_spectrum])
         
         return mfcc.T
 
     def create_mel_filterbank(self, sr, n_fft, n_mels):
-        """ایجاد فیلترهای مل ساده"""
+        
         low_freq = 0
         high_freq = sr / 2
         
-        # تبدیل فرکانس به مقیاس مل
+        
         low_mel = 2595 * np.log10(1 + low_freq / 700)
         high_mel = 2595 * np.log10(1 + high_freq / 700)
         
         mel_points = np.linspace(low_mel, high_mel, n_mels + 2)
         freq_points = 700 * (10 ** (mel_points / 2595) - 1)
         
-        # ایجاد فیلترها
+
         bins = np.floor((n_fft + 1) * freq_points / sr).astype(int)
         filters = np.zeros((n_mels, n_fft // 2 + 1))
         
@@ -84,7 +84,7 @@ class AIModule:
         return filters
 
     def simple_kmeans(self, data, n_clusters, max_iters=100):
-        """K-means ساده"""
+        
         n_samples = data.shape[0]
         centers = data[np.random.choice(n_samples, n_clusters, replace=False)]
         
@@ -141,14 +141,14 @@ class AIModule:
             if emb is None:
                 return {'low': 0.0, 'mid': 0.0, 'high': 0.0}
         
-        # محاسبه centroid ساده
+        
         try:
             import soundfile as sf
             y, sr = sf.read(path)
             if y.ndim > 1:
                 y = y.mean(axis=1)
             
-            # طیف توان ساده
+            
             spectrum = np.abs(np.fft.rfft(y[:8192]))
             freqs = np.fft.rfftfreq(8192, 1/sr)
             sc = np.sum(spectrum * freqs) / np.sum(spectrum)
@@ -174,3 +174,4 @@ class AIModule:
             base['high'] *= 0.9
         
         return base
+
