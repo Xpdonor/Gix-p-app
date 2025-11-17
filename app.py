@@ -53,7 +53,7 @@ class GixpMusicPlayer(toga.App):
         # Left side - Song list
         left_box = toga.Box(style=Pack(direction=COLUMN, width=300, padding=5))
         
-        self.song_list = toga.List(
+        self.song_list = toga.DetailedList(
             on_select=self.play_track,
             style=Pack(flex=1)
         )
