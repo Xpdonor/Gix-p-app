@@ -11,22 +11,21 @@ except ImportError:
     print("miniaudio not available - MP3 support disabled")
 
 def read_audio_file(path):
-    """خواندن فایل‌های صوتی با پشتیبانی از MP3 و WAV"""
+    
     try:
-        # برای فایل‌های MP3
+        
         if path.lower().endswith('.mp3') and MINIAUDIO_AVAILABLE:
             # استفاده از miniaudio برای decode کردن MP3
             audio_data = miniaudio.decode_file(path)
             data = np.frombuffer(audio_data.samples, dtype=np.float32)
             
-            # تبدیل به مونو اگر استریو باشد
             if audio_data.nchannels > 1:
                 data = data.reshape(-1, audio_data.nchannels)
                 data = data.mean(axis=1)
             
             return data, audio_data.sample_rate
         
-        # برای فایل‌های WAV
+        
         elif path.lower().endswith('.wav'):
             with wave.open(path, 'rb') as wav_file:
                 frames = wav_file.getnframes()
@@ -58,7 +57,7 @@ def read_audio_file(path):
                 return data, framerate
         
         else:
-            # برای سایر فرمت‌ها سعی می‌کنیم با miniaudio بخوانیم
+           
             if MINIAUDIO_AVAILABLE:
                 audio_data = miniaudio.decode_file(path)
                 data = np.frombuffer(audio_data.samples, dtype=np.float32)
@@ -73,11 +72,11 @@ def read_audio_file(path):
             
     except Exception as e:
         print(f"Error reading audio file {path}: {e}")
-        # بازگشت یک سیگنال تست در صورت خطا
+        
         return np.zeros(44100), 44100
 
 def write_audio_file(path, data, sr):
-    """نوشتن فایل WAV"""
+    
     try:
         data = data * 32767
         data = np.clip(data, -32768, 32767)
@@ -205,3 +204,4 @@ def spectral_centroid(path, sr=22050):
     except Exception as e:
         print("sc fail", e)
         return 2500.0
+
